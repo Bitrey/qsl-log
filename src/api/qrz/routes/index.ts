@@ -30,6 +30,12 @@ const qrz = new Qrz();
  *          application/json:
  *            schema:
  *              $ref: '#/components/schemas/QrzInfo'
+ *      '401':
+ *        description: Not logged in
+ *        content:
+ *          application/json:
+ *            schema:
+ *              $ref: '#/components/schemas/ResErr'
  *      '500':
  *        description: Server error
  *        content:

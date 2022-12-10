@@ -4,15 +4,17 @@ import express, { ErrorRequestHandler } from "express";
 import morgan from "morgan";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import authRoutes from "./auth/routes";
 import qslRoutes from "./qsl/routes";
 import qrzRoutes from "./qrz/routes";
 import passport from "passport";
-import { INTERNAL_SERVER_ERROR } from "http-status";
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "http-status";
 import { createError } from "./helpers";
 import { Errors } from "./errors";
 import { logger, LoggerStream } from "../shared/logger";
 import { envs } from "../shared/envs";
+import { specs } from "./docs/specs";
 
 const app = express();
 
@@ -24,6 +26,14 @@ app.use(bodyParser.json());
 app.use(cookieParser(envs.COOKIE_SECRET));
 
 app.use(passport.initialize());
+
+if (process.env.NODE_ENV !== "production") {
+    app.use(
+        "/api-docs",
+        swaggerUi.serve,
+        swaggerUi.setup(specs, { explorer: true })
+    );
+}
 
 app.use("/auth", authRoutes);
 app.use("/qsl", passport.authenticate("jwt", { session: false }), qslRoutes);
@@ -42,7 +52,7 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         logger.error(err);
     }
 
-    res.status(INTERNAL_SERVER_ERROR).json(
+    res.status(isUserError ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json(
         createError(isUserError ? err.message : Errors.UNKNOWN_ERROR)
     );
 };

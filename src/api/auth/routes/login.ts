@@ -24,9 +24,9 @@ const router = Router();
  *              password:
  *                type: string
  *                format: password
- *              required:
- *                - callsign
- *                - password
+ *            required:
+ *              - callsign
+ *              - password
  *    tags:
  *      - auth
  *    responses:
@@ -47,10 +47,12 @@ const router = Router();
  *              $ref: '#/components/schemas/ResErr'
  */
 router.post("/", async (req, res, next) => {
-    passport.authenticate("login", async (err, user, info) => {
+    passport.authenticate("login", async (_err, user, info) => {
         try {
-            if (err || !user) {
-                const err = new Error(Errors.UNKNOWN_ERROR);
+            if (_err || !user) {
+                const err = new Error(
+                    _err ? Errors.UNKNOWN_ERROR : Errors.USER_NOT_FOUND
+                );
                 return next(err);
             }
 

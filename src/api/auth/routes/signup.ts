@@ -24,10 +24,10 @@ const router = Router();
  *              email:
  *                type: string
  *                format: email
- *              required:
- *                - callsign
- *                - email
- *                - password
+ *            required:
+ *              - callsign
+ *              - email
+ *              - password
  *    tags:
  *      - auth
  *    responses:
