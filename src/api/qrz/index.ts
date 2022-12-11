@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { parseStringPromise } from "xml2js";
 import { envs } from "../../shared/envs";
+import { logger } from "../../shared/logger";
 import { Errors } from "../errors";
 
 interface _RawData {
@@ -115,7 +116,7 @@ interface Qth {
  *      QrzInfo:
  *        type: object
  *        required:
- *          - data
+ *          - qrz
  *          - qth
  *        properties:
  *          qrz:
@@ -152,10 +153,11 @@ class Qrz {
             const json = await parseStringPromise(data);
             return json.QRZDatabase.Session[0].Key[0];
         } catch (err) {
+            logger.error("Error while logging in to qrz.com");
             if (axios.isAxiosError(err)) {
-                console.log(err.response?.data || err.response || err);
+                logger.error(err.response?.data || err.response || err);
             } else {
-                console.log(err);
+                logger.error(err as any);
             }
             return null;
         }
@@ -166,6 +168,7 @@ class Qrz {
         key: string
     ): Promise<_RawData | null> {
         try {
+            logger.info(`QRZ callsign: ${callsign}`);
             const d = Date.parse(new Date().toString());
             const { data } = await this.instance.get(
                 `/xml/current/?s=${key};callsign=${callsign};t=${d}"`
@@ -173,10 +176,11 @@ class Qrz {
             const json = await parseStringPromise(data);
             return json.QRZDatabase.Callsign[0];
         } catch (err) {
+            logger.error("Error while fetching info from qrz.com");
             if (axios.isAxiosError(err)) {
-                console.log(err.response?.data || err.response || err);
+                logger.error(err.response?.data || err.response || err);
             } else {
-                console.log(err);
+                logger.error(err as any);
             }
             return null;
         }
@@ -198,7 +202,9 @@ class Qrz {
         const d = this._convertRawData(_d);
 
         try {
-            console.log({ q: `${d.address} ${d.state || " "}${d.country}` });
+            logger.info(
+                `Positionstack q: ${d.address} ${d.state || ""} ${d.country}`
+            );
             const qthReq = await axios.get(
                 "http://api.positionstack.com/v1/forward",
                 {
@@ -211,10 +217,11 @@ class Qrz {
 
             return qthReq.data.data[0];
         } catch (err) {
+            logger.error("Error while fetching info from Positionstack");
             if (axios.isAxiosError(err)) {
-                console.log(err.response?.data || err.response || err);
+                logger.error(err.response?.data || err.response || err);
             } else {
-                console.log(err);
+                logger.error(err as any);
             }
             return null;
         }

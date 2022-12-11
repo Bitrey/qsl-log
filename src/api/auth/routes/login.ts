@@ -4,6 +4,7 @@ import { Errors } from "../../errors";
 import jwt from "jsonwebtoken";
 import { envs } from "../../../shared/envs";
 import { AuthOptions } from "../shared";
+import { logger } from "../../../shared/logger";
 
 const router = Router();
 
@@ -48,6 +49,7 @@ const router = Router();
  */
 router.post("/", async (req, res, next) => {
     passport.authenticate("login", async (_err, user, info) => {
+        logger.debug("Logging in callsign " + user?.callsign);
         try {
             if (_err || !user) {
                 const err = new Error(
@@ -56,18 +58,18 @@ router.post("/", async (req, res, next) => {
                 return next(err);
             }
 
-            req.login(user, { session: false }, async err => {
+            req.login(user, { session: false }, err => {
                 if (err) return next(err);
 
-                const body = { _id: user._id, callsign: user.callsign };
-                const token = jwt.sign(
-                    {
-                        callsign: user.callsign,
-                        expiration:
-                            Date.now() + AuthOptions.AUTH_COOKIE_DURATION_MS
-                    },
-                    envs.JWT_SECRET
-                );
+                const body = {
+                    _id: user._id,
+                    callsign: user.callsign,
+                    expiration: Date.now() + AuthOptions.AUTH_COOKIE_DURATION_MS
+                };
+                const token = jwt.sign(body, envs.JWT_SECRET);
+
+                logger.debug("Created new JWT token");
+                logger.debug(body);
 
                 res.cookie(AuthOptions.AUTH_COOKIE_NAME, token, {
                     httpOnly: true,

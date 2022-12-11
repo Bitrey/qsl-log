@@ -15,11 +15,21 @@ passport.use(
         },
         async (req, email, password, done) => {
             try {
+                const callsign = (req.body.callsign as string)
+                    .trim()
+                    .toUpperCase();
+                email = email.trim().toLowerCase();
+                password = password.trim();
+                logger.debug("Signing up " + callsign + " with email " + email);
                 logger.debug(
-                    "Signing up " + req.body.callsign + " with email " + email
+                    "Checking if callsign " +
+                        callsign +
+                        " or email " +
+                        email +
+                        " already exists"
                 );
                 const exists = await User.findOne({
-                    $or: [{ callsign: req.body.callsign, email }]
+                    $or: [{ callsign }, { email }]
                 });
                 if (exists) return done(new Error(Errors.ALREADY_REGISTERED));
 
