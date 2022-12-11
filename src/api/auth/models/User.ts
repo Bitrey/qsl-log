@@ -59,7 +59,8 @@ export class UserClass {
         validate: {
             validator: EmailValidator.validate,
             message: "Invalid email"
-        }
+        },
+        lowercase: true
     })
     public email!: string;
 

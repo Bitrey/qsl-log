@@ -1,17 +1,51 @@
 import { Router } from "express";
-import Log from "../models/Qsl";
-import { INTERNAL_SERVER_ERROR } from "http-status";
+import { INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import { createError } from "../../helpers";
-import { logger } from "@typegoose/typegoose/lib/logSettings";
 import { Errors } from "../../errors";
+import Qsl from "../models";
+import isQslOwner from "../middlewares/isQslOwner";
+import { logger } from "../../../shared/logger";
 
 const router = Router();
 
+/**
+ * @openapi
+ * /qsl:
+ *  get:
+ *    summary: Finds all QSLs
+ *    tags:
+ *      - qsl
+ *    responses:
+ *      '200':
+ *        description: Found QSLs
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: array
+ *              items:
+ *                $ref: '#/components/schemas/Qsl'
+ *      '401':
+ *        description: Not logged in
+ *        content:
+ *          application/json:
+ *            schema:
+ *              $ref: '#/components/schemas/ResErr'
+ *      '500':
+ *        description: Server error
+ *        content:
+ *          application/json:
+ *            schema:
+ *              $ref: '#/components/schemas/ResErr'
+ */
 router.get("/", async (req, res) => {
+    if (!req.user) {
+        logger.error("req.user not populated for QSL search");
+        process.exit(1);
+    }
+
     try {
-        // DEBUG: add filters
-        const log = await Log.find({});
-        return res.json(log);
+        const qsl = await Qsl.find({ fromUser: req.user._id });
+        return res.json(qsl);
     } catch (err) {
         logger.error("Error in QSL search");
         logger.error(err);

@@ -1,6 +1,6 @@
 import "./db";
 import "./auth";
-import express, { ErrorRequestHandler } from "express";
+import express from "express";
 import morgan from "morgan";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
@@ -9,12 +9,23 @@ import authRoutes from "./auth/routes";
 import qslRoutes from "./qsl/routes";
 import qrzRoutes from "./qrz/routes";
 import passport from "passport";
-import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "http-status";
-import { createError } from "./helpers";
-import { Errors } from "./errors";
 import { logger, LoggerStream } from "../shared/logger";
 import { envs } from "../shared/envs";
 import { specs } from "./docs/specs";
+import checkMalformedBody from "./middlewares/checkMalformedBody";
+import errorHandler from "./middlewares/errorHandler";
+import populateUser from "./middlewares/populateUser";
+import { UserDoc } from "./auth/models";
+import { QslDoc } from "./qsl/models";
+
+declare global {
+    namespace Express {
+        interface User extends UserDoc {}
+        interface Request {
+            qsl?: QslDoc;
+        }
+    }
+}
 
 const app = express();
 
@@ -36,27 +47,20 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 app.use("/auth", authRoutes);
-app.use("/qsl", passport.authenticate("jwt", { session: false }), qslRoutes);
-app.use("/qrz", passport.authenticate("jwt", { session: false }), qrzRoutes);
+app.use(
+    "/qsl",
+    passport.authenticate("jwt", { session: false }),
+    populateUser,
+    qslRoutes
+);
+app.use(
+    "/qrz",
+    passport.authenticate("jwt", { session: false }),
+    populateUser,
+    qrzRoutes
+);
 
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-    logger.error("Express request handler error");
-
-    const isUserError =
-        err instanceof (Error as any) &&
-        err.message in Errors &&
-        ![Errors.SERVER_ERROR, Errors.UNKNOWN_ERROR].includes(err.message);
-    if (isUserError) {
-        logger.debug(err);
-    } else {
-        logger.error(err);
-    }
-
-    res.status(isUserError ? BAD_REQUEST : INTERNAL_SERVER_ERROR).json(
-        createError(isUserError ? err.message : Errors.UNKNOWN_ERROR)
-    );
-};
-
+app.use(checkMalformedBody);
 app.use(errorHandler);
 
 const PORT = Number(process.env.PORT) || 3000;
