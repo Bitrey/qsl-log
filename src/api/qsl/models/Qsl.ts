@@ -80,7 +80,7 @@ import { UserClass } from "../../auth/models/User";
     options: { customName: "Qsl" }
 })
 export class QslClass {
-    @prop({ ref: () => UserClass })
+    @prop({ ref: () => UserClass, required: true })
     public fromUser!: Ref<UserClass>;
 
     // remember to cache it
@@ -95,7 +95,7 @@ export class QslClass {
     public frequencyKhz!: number;
 
     // remember to cache it
-    @prop({ required: true, minlength: 1, maxlength: 10 })
+    @prop({ required: true, minlength: 1, maxlength: 10, uppercase: true })
     public modulation!: string;
 
     // remember to get it automatically
